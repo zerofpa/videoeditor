@@ -1,0 +1,7 @@
+ffmpeg-python
+opencv-python-headless
+librosa
+Flask
+scenedetect
+
+
