@@ -1,5 +1,4 @@
 # Hey, Zero here! Be cognisant of your file paths and make sure you have all your dependencies installed in your environment.
-
 import os
 import ffmpeg
 import cv2
@@ -87,11 +86,33 @@ def upload_video():
     try:
         video_file.save(video_path)
         logger.info(f"Video file saved at {video_path}")
+
+        # Process the video
+        output_folder = '/path/to/output_folder'
+        os.makedirs(output_folder, exist_ok=True)
+
+        # Extract frames
+        extract_frames(video_path, output_folder)
+
+        # Detect scenes
+        scenes = detect_scenes(video_path)
+        logger.info(f"Scenes detected: {scenes}")
+
+        # Analyze audio
+        audio_analysis = analyze_audio(video_path)
+        logger.info(f"Audio analysis: {audio_analysis}")
+
+        # Apply editing rules
+        frames = []  # Load frames as needed
+        edited_frames = apply_editing_rules(frames, audio_analysis)
+        logger.info(f"Edited frames: {len(edited_frames)}")
+
     except Exception as e:
-        logger.error(f"Error saving video file: {e}")
-        return jsonify({'status': 'fail', 'message': 'Error saving video file'}), 500
+        logger.error(f"Error processing video file: {e}")
+        return jsonify({'status': 'fail', 'message': 'Error processing video file'}), 500
 
     return jsonify({'status': 'success', 'video_path': video_path})
+
 
 # GET route to check server status
 @app.route('/', methods=['GET'])
@@ -114,5 +135,6 @@ if __name__ == '__main__':
     # Example of using the upload_video_request function
     result = upload_video_request('/path/to/your/video.webm')
     print(result)
+
 
 
