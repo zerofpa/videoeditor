@@ -7,6 +7,7 @@ import librosa
 import logging
 from flask import Flask, request, jsonify
 import scenedetect
+import requests
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -15,7 +16,7 @@ logger = logging.getLogger(__name__)
 # Initialize Flask app
 app = Flask(__name__)
 
-# Function to extract frames from video (put appropriate paths)
+# Function to extract frames from video
 def extract_frames(video_path, output_folder):
     logger.info(f"Extracting frames from {video_path} to {output_folder}")
     try:
@@ -92,9 +93,26 @@ def upload_video():
 
     return jsonify({'status': 'success', 'video_path': video_path})
 
+# GET route to check server status
+@app.route('/', methods=['GET'])
+def home():
+    return "Server is running"
+
+# Function to upload video using requests
+def upload_video_request(file_path):
+    url = 'http://127.0.0.1:5000/upload'
+    files = {'video': open(file_path, 'rb')}
+    response = requests.post(url, files=files)
+    return response.json()
+
 if __name__ == '__main__':
     # Ensure the uploads directory exists
     os.makedirs('/uploads', exist_ok=True)
     logger.info("Starting Flask app")
     app.run(debug=True)
+
+    # Example of using the upload_video_request function
+    result = upload_video_request('/path/to/your/video.webm')
+    print(result)
+
 
