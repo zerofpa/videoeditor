@@ -25,3 +25,5 @@ Example Workflow:
     - Automated Editing: The AI applies editing rules to create a polished video.
     - User Adjustments: The user can review and adjust the edits through the interface.
     - Export: The final edited video is exported and made available for download.
+
+(Use of yt-dlp to download youtube videos)
