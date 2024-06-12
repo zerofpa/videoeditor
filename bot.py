@@ -1,4 +1,3 @@
-# Hey, Zero here! Be cognisant of your file paths and make sure you have all your dependencies installed in your environment.
 import os
 import ffmpeg
 import cv2
@@ -6,7 +5,8 @@ import librosa
 import logging
 from flask import Flask, request, jsonify
 import scenedetect
-import requests
+from scenedetect import SceneManager
+from scenedetect.detectors import ContentDetector
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -28,7 +28,13 @@ def extract_frames(video_path, output_folder):
 def detect_scenes(video_path):
     logger.info(f"Detecting scenes in {video_path}")
     try:
-        scene_list = scenedetect.detect(video_path)
+        scene_manager = SceneManager()
+        scene_manager.add_detector(ContentDetector())
+        video = scenedetect.VideoManager([video_path])
+        video.set_downscale_factor()
+        video.start()
+        scene_manager.detect_scenes(video)
+        scene_list = scene_manager.get_scene_list()
         return scene_list
     except Exception as e:
         logger.error(f"Error detecting scenes: {e}")
@@ -88,7 +94,7 @@ def upload_video():
         logger.info(f"Video file saved at {video_path}")
 
         # Process the video
-        output_folder = '/path/to/output_folder'
+        output_folder = os.path.join('/uploads', 'output')
         os.makedirs(output_folder, exist_ok=True)
 
         # Extract frames
@@ -113,28 +119,13 @@ def upload_video():
 
     return jsonify({'status': 'success', 'video_path': video_path})
 
-
 # GET route to check server status
 @app.route('/', methods=['GET'])
 def home():
     return "Server is running"
-
-# Function to upload video using requests
-def upload_video_request(file_path):
-    url = 'http://127.0.0.1:5000/upload'
-    files = {'video': open(file_path, 'rb')}
-    response = requests.post(url, files=files)
-    return response.json()
 
 if __name__ == '__main__':
     # Ensure the uploads directory exists
     os.makedirs('/uploads', exist_ok=True)
     logger.info("Starting Flask app")
     app.run(debug=True)
-
-    # Example of using the upload_video_request function
-    result = upload_video_request('/path/to/your/video.webm')
-    print(result)
-
-
-
