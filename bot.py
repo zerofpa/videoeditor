@@ -1,3 +1,5 @@
+# Hey, Zero here! Be cognisant of your file paths and make sure you have all your dependencies installed in your environment.
+
 import os
 import ffmpeg
 import cv2
@@ -13,7 +15,7 @@ logger = logging.getLogger(__name__)
 # Initialize Flask app
 app = Flask(__name__)
 
-# Function to extract frames from video
+# Function to extract frames from video (put appropriate paths)
 def extract_frames(video_path, output_folder):
     logger.info(f"Extracting frames from {video_path} to {output_folder}")
     try:
