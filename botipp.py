@@ -3,8 +3,9 @@ import ffmpeg
 import cv2
 import librosa
 import logging
-from moviepy.editor import VideoFileClip, concatenate_videoclips, vfx, TextClip, CompositeVideoClip
 import openai
+from moviepy.editor import VideoFileClip, concatenate_videoclips, vfx, TextClip, CompositeVideoClip
+import argparse
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -93,10 +94,12 @@ def apply_editing_rules(video_path, rules, output_path):
         logger.error(f"Error applying editing rules: {e}")
         raise
 
-# Function to process video files in a directory
-def process_videos(input_dir, output_dir, prompt):
-    for filename in os.listdir(input_dir):
-        if filename.endswith(".webm") or filename.endswith(".mp4"):
+# Function to process video files in batches
+def process_videos(input_dir, output_dir, prompt, batch_size=1):
+    files = [f for f in os.listdir(input_dir) if f.endswith(".webm") or f.endswith(".mp4")]
+    for i in range(0, len(files), batch_size):
+        batch = files[i:i+batch_size]
+        for filename in batch:
             video_path = os.path.join(input_dir, filename)
             output_video_path = os.path.join(output_dir, f"processed_{filename}")
             output_audio_path = os.path.join(output_dir, f"enhanced_audio_{filename}.wav")
@@ -132,10 +135,17 @@ def process_videos(input_dir, output_dir, prompt):
             except Exception as e:
                 logger.error(f"Error processing {filename}: {e}")
 
-# Define the input and output directories
-input_directory = '/path/to/input_videos'
-output_directory = '/path/to/output_videos'
-llm_prompt = "Create video editing rules for a Food ASMR YouTube Shorts video"
+# Define the main function
+def main():
+    parser = argparse.ArgumentParser(description='Process videos with LLM-generated editing rules.')
+    parser.add_argument('--input_dir', type=str, required=True, help='Path to the input directory containing videos.')
+    parser.add_argument('--output_dir', type=str, required=True, help='Path to the output directory for processed videos.')
+    parser.add_argument('--prompt', type=str, required=True, help='Prompt to generate editing rules.')
 
-# Process videos
-process_videos(input_directory, output_directory, llm_prompt)
+    args = parser.parse_args()
+
+    # Process videos in batches
+    process_videos(args.input_dir, args.output_dir, args.prompt, batch_size=1)
+
+if __name__ == '__main__':
+    main()
