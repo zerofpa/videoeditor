@@ -6,14 +6,15 @@ import logging
 import openai
 from moviepy.editor import VideoFileClip, concatenate_videoclips, vfx, TextClip, CompositeVideoClip
 import argparse
+from scenedetect import SceneManager, open_video
+from scenedetect.detectors import ContentDetector
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Initialize OpenAI API
-openai.api_key = 'YOUR_OPENAI_API_KEY'
-
+openai.api_key = ''
 # Function to get editing rules from LLM
 def get_editing_rules(prompt):
     response = openai.Completion.create(
@@ -36,15 +37,10 @@ def extract_frames(video_path, output_folder):
 def detect_scenes(video_path):
     logger.info(f"Detecting scenes in {video_path}")
     try:
-        from scenedetect import SceneManager, VideoManager
-        from scenedetect.detectors import ContentDetector
-
+        video_stream = open_video(video_path)
         scene_manager = SceneManager()
         scene_manager.add_detector(ContentDetector())
-        video = VideoManager([video_path])
-        video.set_downscale_factor()
-        video.start()
-        scene_manager.detect_scenes(video)
+        scene_manager.detect_scenes(video_stream)
         scene_list = scene_manager.get_scene_list()
         return scene_list
     except Exception as e:
@@ -55,7 +51,8 @@ def detect_scenes(video_path):
 def analyze_audio(audio_path):
     logger.info(f"Analyzing audio at {audio_path}")
     try:
-        y, sr = librosa.load(audio_path)
+        # Use a smaller chunk duration to reduce memory usage
+        y, sr = librosa.load(audio_path, sr=None, duration=60)
         tempo, beat_frames = librosa.beat.beat_track(y=y, sr=sr)
         return tempo, beat_frames
     except Exception as e:
@@ -64,10 +61,15 @@ def analyze_audio(audio_path):
 
 # Function to enhance audio for ASMR
 def enhance_audio(input_audio_path, output_audio_path):
-    y, sr = librosa.load(input_audio_path, sr=None)
-    y_filtered = librosa.effects.preemphasis(y)
-    y_amplified = y_filtered * 1.5
-    librosa.output.write_wav(output_audio_path, y_amplified, sr)
+    logger.info(f"Enhancing audio for ASMR in {input_audio_path}")
+    try:
+        y, sr = librosa.load(input_audio_path, sr=None)
+        y_filtered = librosa.effects.preemphasis(y)
+        y_amplified = y_filtered * 1.5
+        librosa.output.write_wav(output_audio_path, y_amplified, sr)
+    except Exception as e:
+        logger.error(f"Error enhancing audio: {e}")
+        raise
 
 # Function to apply editing rules
 def apply_editing_rules(video_path, rules, output_path):
@@ -103,6 +105,7 @@ def process_videos(input_dir, output_dir, prompt, batch_size=1):
             video_path = os.path.join(input_dir, filename)
             output_video_path = os.path.join(output_dir, f"processed_{filename}")
             output_audio_path = os.path.join(output_dir, f"enhanced_audio_{filename}.wav")
+            rules_output_path = os.path.join(output_dir, f"rules_{filename}.txt")
 
             try:
                 os.makedirs(output_dir, exist_ok=True)
@@ -128,6 +131,10 @@ def process_videos(input_dir, output_dir, prompt, batch_size=1):
                 editing_rules = get_editing_rules(prompt)
                 logger.info(f"Editing rules received: {editing_rules}")
 
+                # Save the generated rules for external use
+                with open(rules_output_path, 'w') as f:
+                    f.write(editing_rules)
+
                 # Apply editing rules
                 apply_editing_rules(video_path, editing_rules, output_video_path)
                 logger.info(f"Video processing completed for {filename}")
@@ -149,4 +156,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-#
